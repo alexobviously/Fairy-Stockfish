@@ -640,7 +640,7 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
   }
 
   // pieces in hand
-  if (piece_drops() || seirawan_gating() || arrow_gating())
+  if (piece_drops() || (seirawan_gating() && !commit_gates()) || arrow_gating())
   {
       ss << '[';
       if (holdings != "-")

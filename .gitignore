@@ -4,3 +4,9 @@ stockfish
 tests/js/node_modules
 ffish.js
 *.wasm
+build/lib.macosx-10.14-x86_64-3.7/pyffish.cpython-37m-darwin.so
+dist/pyffish-0.0.50-py3.7-macosx-10.14-x86_64.egg
+pyffish.egg-info/dependency_links.txt
+pyffish.egg-info/PKG-INFO
+pyffish.egg-info/SOURCES.txt
+pyffish.egg-info/top_level.txt
