@@ -42,12 +42,13 @@ int main(int argc, char* argv[]) {
   pieceMap.init();
   variants.init();
   UCI::init(Options);
+  Tune::init();
   PSQT::init(variants.find(Options["UCI_Variant"])->second);
   Bitboards::init();
   Position::init();
   Bitbases::init();
   Endgames::init();
-  Threads.set(Options["Threads"]);
+  Threads.set(size_t(Options["Threads"]));
   Search::clear(); // After threads are up
 
   UCI::loop(argc, argv);

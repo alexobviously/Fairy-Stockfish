@@ -41,7 +41,7 @@ struct TTEntry {
   Value value() const { return (Value)value16; }
   Value eval()  const { return (Value)eval16; }
   Depth depth() const { return (Depth)depth8 + DEPTH_OFFSET; }
-  bool is_pv() const { return (bool)(genBound8 & 0x4); }
+  bool is_pv()  const { return (bool)(genBound8 & 0x4); }
   Bound bound() const { return (Bound)(genBound8 & 0x3); }
   void save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev);
 
@@ -75,16 +75,15 @@ class TranspositionTable {
   static_assert(sizeof(Cluster) == 64, "Unexpected Cluster size");
 
 public:
- ~TranspositionTable() { free(mem); }
+ ~TranspositionTable() { aligned_ttmem_free(mem); }
   void new_search() { generation8 += 8; } // Lower 3 bits are used by PV flag and Bound
   TTEntry* probe(const Key key, bool& found) const;
   int hashfull() const;
   void resize(size_t mbSize);
   void clear();
 
-  // The 32 lowest order bits of the key are used to get the index of the cluster
   TTEntry* first_entry(const Key key) const {
-    return &table[(uint32_t(key) * uint64_t(clusterCount)) >> 32].entry[0];
+    return &table[mul_hi64(key, clusterCount)].entry[0];
   }
 
 private:

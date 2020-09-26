@@ -35,10 +35,14 @@ BINDIR = $(PREFIX)/bin
 ### Built-in benchmark for pgo-builds
 PGOBENCH = ./$(EXE) bench
 
-### Object files
-OBJS = benchmark.o bitbase.o bitboard.o endgame.o evaluate.o main.o \
-	material.o misc.o movegen.o movepick.o partner.o parser.o pawns.o piece.o position.o psqt.o \
-	search.o thread.o timeman.o tt.o uci.o ucioption.o variant.o xboard.o syzygy/tbprobe.o
+### Source and object files
+SRCS = benchmark.cpp bitbase.cpp bitboard.cpp endgame.cpp evaluate.cpp main.cpp \
+	material.cpp misc.cpp movegen.cpp movepick.cpp partner.cpp parser.cpp pawns.cpp piece.cpp position.cpp psqt.cpp \
+	search.cpp thread.cpp timeman.cpp tt.cpp uci.cpp ucioption.cpp variant.cpp xboard.cpp tune.cpp syzygy/tbprobe.cpp
+
+OBJS = $(notdir $(SRCS:.cpp=.o))
+
+VPATH = syzygy
 
 ### Establish the operating system name
 KERNEL = $(shell uname -s)
@@ -71,6 +75,7 @@ endif
 
 ### 2.1. General and architecture defaults
 largeboards = no
+all = no
 precomputedmagics = yes
 optimize = yes
 debug = no
@@ -161,6 +166,11 @@ ifneq ($(largeboards),no)
 	ifeq ($(precomputedmagics),yes)
 		CXXFLAGS += -DPRECOMPUTED_MAGICS
 	endif
+endif
+
+# Enable all variants, even heavyweight ones like amazons
+ifneq ($(all),no)
+	CXXFLAGS += -DALLVARS
 endif
 
 ifeq ($(COMP),)
@@ -422,13 +432,17 @@ help:
 	@echo "make build ARCH=x86-64 COMP=clang"
 	@echo "make profile-build ARCH=x86-64-bmi2 COMP=gcc COMPCXX=g++-4.8"
 	@echo ""
-	@echo "Version for large boards (only GCC and mingw, 64-bit required): "
+	@echo "Version for large boards: "
 	@echo ""
 	@echo "make build ARCH=x86-64 COMP=gcc largeboards=yes"
 	@echo ""
+	@echo "Include all variants: "
+	@echo ""
+	@echo "make build ARCH=x86-64 largeboards=yes all=yes"
+	@echo ""
 
 
-.PHONY: help build profile-build strip install clean objclean profileclean help \
+.PHONY: help build profile-build strip install clean objclean profileclean \
         config-sanity icc-profile-use icc-profile-make gcc-profile-use gcc-profile-make \
         clang-profile-use clang-profile-make
 
@@ -469,7 +483,7 @@ objclean:
 # clean auxiliary profiling files
 profileclean:
 	@rm -rf profdir
-	@rm -f bench.txt *.gcda ./syzygy/*.gcda *.gcno ./syzygy/*.gcno
+	@rm -f bench.txt *.gcda *.gcno
 	@rm -f stockfish.profdata *.profraw
 
 default:
@@ -555,7 +569,7 @@ icc-profile-use:
 	all
 
 .depend:
-	-@$(CXX) $(DEPENDFLAGS) -MM $(OBJS:.o=.cpp) > $@ 2> /dev/null
+	-@$(CXX) $(DEPENDFLAGS) -MM $(SRCS) > $@ 2> /dev/null
 
 -include .depend
 

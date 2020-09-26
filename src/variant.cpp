@@ -177,8 +177,8 @@ namespace {
     Variant* kingofthehill_variant() {
         Variant* v = fairy_variant_base();
         v->flagPiece = KING;
-        v->whiteFlag = make_bitboard(SQ_D4, SQ_E4, SQ_D5, SQ_E5);
-        v->blackFlag = make_bitboard(SQ_D4, SQ_E4, SQ_D5, SQ_E5);
+        v->whiteFlag = (Rank4BB | Rank5BB) & (FileDBB | FileEBB);
+        v->blackFlag = (Rank4BB | Rank5BB) & (FileDBB | FileEBB);
         v->flagMove = false;
         return v;
     }
@@ -620,6 +620,27 @@ namespace {
         v->blackFlag = Rank1BB;
         return v;
     }
+    Variant* ataxx_variant() {
+        Variant* v = fairy_variant_base();
+        v->pieceToCharTable = "P.................p.................";
+        v->maxRank = RANK_7;
+        v->maxFile = FILE_G;
+        v->reset_pieces();
+        v->add_piece(ATAXX_PIECE, 'p');
+        v->startFen = "P5p/7/7/7/7/7/p5P[PPPPPPPPPPPPPPPPPPPPPPPPPppppppppppppppppppppppppp] w 0 1";
+        v->promotionPieceTypes = {};
+        v->pieceDrops = true;
+        v->doubleStep = false;
+        v->castling = false;
+        v->immobilityIllegal = false;
+        v->stalemateValue = -VALUE_MATE;
+        v->stalematePieceCount = true;
+        v->passOnStalemate = true;
+        v->enclosingDrop = ATAXX;
+        v->flipEnclosedPieces = ATAXX;
+        v->materialCounting = UNWEIGHTED_MATERIAL;
+        return v;
+    }
     Variant* minixiangqi_variant() {
         Variant* v = fairy_variant_base();
         v->variantTemplate = "xiangqi";
@@ -633,14 +654,8 @@ namespace {
         v->add_piece(CANNON, 'c');
         v->add_piece(SOLDIER, 'p');
         v->startFen = "rcnkncr/p1ppp1p/7/7/7/P1PPP1P/RCNKNCR w - - 0 1";
-        Bitboard white_castle = make_bitboard(SQ_C1, SQ_D1, SQ_E1,
-                                              SQ_C2, SQ_D2, SQ_E2,
-                                              SQ_C3, SQ_D3, SQ_E3);
-        Bitboard black_castle = make_bitboard(SQ_C5, SQ_D5, SQ_E5,
-                                              SQ_C6, SQ_D6, SQ_E6,
-                                              SQ_C7, SQ_D7, SQ_E7);
-        v->mobilityRegion[WHITE][KING] = white_castle;
-        v->mobilityRegion[BLACK][KING] = black_castle;
+        v->mobilityRegion[WHITE][KING] = (Rank1BB | Rank2BB | Rank3BB) & (FileCBB | FileDBB | FileEBB);
+        v->mobilityRegion[BLACK][KING] = (Rank5BB | Rank6BB | Rank7BB) & (FileCBB | FileDBB | FileEBB);
         v->kingType = WAZIR;
         v->promotionPieceTypes = {};
         v->doubleStep = false;
@@ -697,7 +712,7 @@ namespace {
     }
     Variant* janus_variant() {
         Variant* v = chess_variant();
-        v->pieceToCharTable = "PNBRQ............J...Kpnbrq............J...k";
+        v->pieceToCharTable = "PNBRQ............J...Kpnbrq............j...k";
         v->maxRank = RANK_8;
         v->maxFile = FILE_J;
         v->castlingKingsideFile = FILE_I;
@@ -836,6 +851,23 @@ namespace {
                       "pPpPpPpPpP/PpPpPpPpPp/pPpPpPpPpP/PpPpPpPpPp/pPpPpPpPpP w 0 1";
         return v;
     }
+#ifdef ALLVARS
+    // Game of the Amazons
+    // https://en.wikipedia.org/wiki/Game_of_the_Amazons
+    Variant* amazons_variant() {
+        Variant* v = fairy_variant_base();
+        v->pieceToCharTable = "P...Q.................p...q.................";
+        v->maxRank = RANK_10;
+        v->maxFile = FILE_J;
+        v->reset_pieces();
+        v->add_piece(QUIET_QUEEN, 'q');
+        v->add_piece(IMMOBILE_PIECE, 'p');
+        v->startFen = "3q2q3/10/10/q8q/10/10/Q8Q/10/10/3Q2Q3[PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppppppppppppppppppppppppppppppppppppp] w - - 0 1";
+        v->stalemateValue = -VALUE_MATE;
+        v->arrowGating = true;
+        return v;
+    }
+#endif
     Variant* xiangqi_variant() {
         Variant* v = minixiangqi_variant();
         v->pieceToCharTable = "PN.R.AB..K.C..........pn.r.ab..k.c..........";
@@ -844,16 +876,10 @@ namespace {
         v->add_piece(ELEPHANT, 'b', 'e');
         v->add_piece(FERS, 'a');
         v->startFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
-        Bitboard white_castle = make_bitboard(SQ_D1, SQ_E1, SQ_F1,
-                                              SQ_D2, SQ_E2, SQ_F2,
-                                              SQ_D3, SQ_E3, SQ_F3);
-        Bitboard black_castle = make_bitboard(SQ_D8, SQ_E8, SQ_F8,
-                                              SQ_D9, SQ_E9, SQ_F9,
-                                              SQ_D10, SQ_E10, SQ_F10);
-        v->mobilityRegion[WHITE][KING] = white_castle;
-        v->mobilityRegion[BLACK][KING] = black_castle;
-        v->mobilityRegion[WHITE][FERS] = white_castle;
-        v->mobilityRegion[BLACK][FERS] = black_castle;
+        v->mobilityRegion[WHITE][KING] = (Rank1BB | Rank2BB | Rank3BB) & (FileDBB | FileEBB | FileFBB);
+        v->mobilityRegion[BLACK][KING] = (Rank8BB | Rank9BB | Rank10BB) & (FileDBB | FileEBB | FileFBB);
+        v->mobilityRegion[WHITE][FERS] = v->mobilityRegion[WHITE][KING];
+        v->mobilityRegion[BLACK][FERS] = v->mobilityRegion[BLACK][KING];
         v->mobilityRegion[WHITE][ELEPHANT] = Rank1BB | Rank2BB | Rank3BB | Rank4BB | Rank5BB;
         v->mobilityRegion[BLACK][ELEPHANT] = Rank6BB | Rank7BB | Rank8BB | Rank9BB | Rank10BB;
         v->soldierPromotionRank = RANK_6;
@@ -894,21 +920,15 @@ namespace {
         v->add_piece(JANGGI_CANNON, 'c');
         v->add_piece(JANGGI_ELEPHANT, 'b', 'e');
         v->startFen = "rnba1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RNBA1ABNR w - - 0 1";
-        Bitboard white_castle = make_bitboard(SQ_D1, SQ_E1, SQ_F1,
-                                              SQ_D2, SQ_E2, SQ_F2,
-                                              SQ_D3, SQ_E3, SQ_F3);
-        Bitboard black_castle = make_bitboard(SQ_D8, SQ_E8, SQ_F8,
-                                              SQ_D9, SQ_E9, SQ_F9,
-                                              SQ_D10, SQ_E10, SQ_F10);
-        v->mobilityRegion[WHITE][WAZIR] = white_castle;
-        v->mobilityRegion[BLACK][WAZIR] = black_castle;
+        v->mobilityRegion[WHITE][WAZIR] = v->mobilityRegion[WHITE][KING];
+        v->mobilityRegion[BLACK][WAZIR] = v->mobilityRegion[BLACK][KING];
         v->soldierPromotionRank = RANK_1;
         v->flyingGeneral = false;
         v->bikjangRule = true;
         v->materialCounting = JANGGI_MATERIAL;
         v->diagonalLines = make_bitboard(SQ_D1, SQ_F1, SQ_E2, SQ_D3, SQ_F3,
                                          SQ_D8, SQ_F8, SQ_E9, SQ_D10, SQ_F10);
-        v->kingPass = true;
+        v->pass = true;
         v->nFoldValue = VALUE_DRAW;
         v->perpetualCheckIllegal = true;
         return v;
@@ -921,11 +941,12 @@ namespace {
         return v;
     }
     // Modern rules of Janggi, where bikjang is not considered, but material counting is.
-    // This is e.g. used on Kakao Janggi.
+    // The repetition rules are also adjusted for better compatibility with Kakao Janggi.
     Variant* janggi_modern_variant() {
         Variant* v = janggi_variant();
         v->bikjangRule = false;
         v->materialCounting = JANGGI_MATERIAL;
+        v->nFoldValue = -VALUE_MATE;
         return v;
     }
     // Casual rules of Janggi, where bikjang and material counting are not considered
@@ -1000,6 +1021,7 @@ void VariantMap::init() {
     add("shatar", shatar_variant());
     add("clobber", clobber_variant());
     add("breakthrough", breakthrough_variant());
+    add("ataxx", ataxx_variant());
     add("minixiangqi", minixiangqi_variant());
 #ifdef LARGEBOARDS
     add("shogi", shogi_variant());
@@ -1017,6 +1039,9 @@ void VariantMap::init() {
     add("grand", grand_variant());
     add("shako", shako_variant());
     add("clobber10", clobber10_variant());
+#ifdef ALLVARS
+    add("amazons", amazons_variant());
+#endif
     add("xiangqi", xiangqi_variant());
     add("manchu", manchu_variant());
     add("supply", supply_variant());

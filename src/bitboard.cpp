@@ -163,8 +163,9 @@ const std::string Bitboards::pretty(Bitboard b) {
       for (File f = FILE_A; f <= FILE_MAX; ++f)
           s += b & make_square(f, r) ? "| X " : "|   ";
 
-      s += "|\n+---+---+---+---+---+---+---+---+---+---+---+---+\n";
+      s += "| " + std::to_string(1 + r) + "\n+---+---+---+---+---+---+---+---+---+---+---+---+\n";
   }
+  s += "  a   b   c   d   e   f   g   h   i   j   k\n";
 
   return s;
 }
@@ -248,7 +249,7 @@ void Bitboards::init() {
   }
 
   for (unsigned i = 0; i < (1 << 16); ++i)
-      PopCnt16[i] = std::bitset<16>(i).count();
+      PopCnt16[i] = uint8_t(std::bitset<16>(i).count());
 
   for (Square s = SQ_A1; s <= SQ_MAX; ++s)
       SquareBB[s] = make_bitboard(s);
@@ -290,25 +291,15 @@ void Bitboards::init() {
           {
               for (Direction d : pi->stepsCapture)
               {
-                  Square to = s + Direction(c == WHITE ? d : -d);
-
-                  if (is_ok(to) && distance(s, to) < 4)
-                  {
-                      PseudoAttacks[c][pt][s] |= to;
-                      if (!pi->lameLeaper)
-                          LeaperAttacks[c][pt][s] |= to;
-                  }
+                  PseudoAttacks[c][pt][s] |= safe_destination(s, c == WHITE ? d : -d);
+                  if (!pi->lameLeaper)
+                      LeaperAttacks[c][pt][s] |= safe_destination(s, c == WHITE ? d : -d);
               }
               for (Direction d : pi->stepsQuiet)
               {
-                  Square to = s + Direction(c == WHITE ? d : -d);
-
-                  if (is_ok(to) && distance(s, to) < 4)
-                  {
-                      PseudoMoves[c][pt][s] |= to;
-                      if (!pi->lameLeaper)
-                          LeaperMoves[c][pt][s] |= to;
-                  }
+                  PseudoMoves[c][pt][s] |= safe_destination(s, c == WHITE ? d : -d);
+                  if (!pi->lameLeaper)
+                      LeaperMoves[c][pt][s] |= safe_destination(s, c == WHITE ? d : -d);
               }
               PseudoAttacks[c][pt][s] |= sliding_attack<RIDER>(pi->sliderCapture, s, 0, c);
               PseudoAttacks[c][pt][s] |= sliding_attack<RIDER>(pi->hopperCapture, s, 0, c);

@@ -121,7 +121,7 @@ namespace {
     limits.banmoves = banmoves;
 
     while (is >> token)
-        if (token == "searchmoves")
+        if (token == "searchmoves") // Needs to be the last command on the line
             while (is >> token)
                 limits.searchmoves.push_back(UCI::to_move(pos, token));
 
@@ -324,13 +324,13 @@ string UCI::value(Value v) {
 
   if (Options["Protocol"] == "xboard")
   {
-      if (abs(v) < VALUE_MATE - MAX_PLY)
+      if (abs(v) < VALUE_MATE_IN_MAX_PLY)
           ss << v * 100 / PawnValueEg;
       else
           ss << (v > 0 ? XBOARD_VALUE_MATE + VALUE_MATE - v + 1 : -XBOARD_VALUE_MATE - VALUE_MATE - v - 1) / 2;
   } else
 
-  if (abs(v) < VALUE_MATE - MAX_PLY)
+  if (abs(v) < VALUE_MATE_IN_MAX_PLY)
       ss << "cp " << v * 100 / PawnValueEg;
   else if (Options["Protocol"] == "usi")
       // In USI, mate distance is given in ply
@@ -409,7 +409,11 @@ string UCI::move(const Position& pos, Move m) {
   else if (type_of(m) == PIECE_DEMOTION)
       move += '-';
   else if (is_gating(m))
+  {
       move += pos.piece_to_char()[make_piece(BLACK, gating_type(m))];
+      if (gating_square(m) != from)
+          move += UCI::square(pos, gating_square(m));
+  }
 
   return move;
 }

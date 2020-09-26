@@ -21,25 +21,9 @@
 #include <algorithm>
 
 #include "types.h"
+#include "bitboard.h"
 #include "piece.h"
 #include "variant.h"
-
-Value PieceValue[PHASE_NB][PIECE_NB] = {
-  { VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg,
-    FersValueMg, AlfilValueMg, FersAlfilValueMg, SilverValueMg, AiwokValueMg, BersValueMg,
-    ArchbishopValueMg, ChancellorValueMg, AmazonValueMg, KnibisValueMg, BiskniValueMg, KnirooValueMg, RookniValueMg,
-    ShogiPawnValueMg, LanceValueMg, ShogiKnightValueMg, EuroShogiKnightValueMg, GoldValueMg, DragonHorseValueMg,
-    ClobberPieceValueMg, BreakthroughPieceValueMg, ImmobilePieceValueMg,
-    CannonPieceValueMg, JanggiCannonPieceValueMg, SoldierValueMg, HorseValueMg, ElephantValueMg, JanggiElephantValueMg, BannerValueMg,
-    WazirValueMg, CommonerValueMg, CentaurValueMg },
-  { VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg,
-    FersValueEg, AlfilValueEg, FersAlfilValueEg, SilverValueEg, AiwokValueEg, BersValueEg,
-    ArchbishopValueMg, ChancellorValueEg, AmazonValueEg, KnibisValueMg, BiskniValueMg, KnirooValueEg, RookniValueEg,
-    ShogiPawnValueEg, LanceValueEg, ShogiKnightValueEg, EuroShogiKnightValueEg, GoldValueEg, DragonHorseValueEg,
-    ClobberPieceValueEg, BreakthroughPieceValueEg, ImmobilePieceValueEg,
-    CannonPieceValueEg, JanggiCannonPieceValueEg, SoldierValueEg, HorseValueEg, ElephantValueEg, JanggiElephantValueEg, BannerValueEg,
-    WazirValueEg, CommonerValueEg, CentaurValueEg }
-};
 
 namespace PSQT {
 
@@ -110,9 +94,9 @@ constexpr Score PBonus[RANK_NB][FILE_NB] =
    { },
    { S(  3,-10), S(  3, -6), S( 10, 10), S( 19,  0), S( 16, 14), S( 19,  7), S(  7, -5), S( -5,-19) },
    { S( -9,-10), S(-15,-10), S( 11,-10), S( 15,  4), S( 32,  4), S( 22,  3), S(  5, -6), S(-22, -4) },
-   { S( -8,  6), S(-23, -2), S(  6, -8), S( 20, -4), S( 40,-13), S( 17,-12), S(  4,-10), S(-12, -9) },
+   { S( -4,  6), S(-23, -2), S(  6, -8), S( 20, -4), S( 40,-13), S( 17,-12), S(  4,-10), S( -8, -9) },
    { S( 13,  9), S(  0,  4), S(-13,  3), S(  1,-12), S( 11,-12), S( -2, -6), S(-13, 13), S(  5,  8) },
-   { S( -5, 28), S(-12, 20), S( -7, 21), S( 22, 28), S( -8, 30), S( -5,  7), S(-15,  6), S(-18, 13) },
+   { S(  5, 28), S(-12, 20), S( -7, 21), S( 22, 28), S( -8, 30), S( -5,  7), S(-15,  6), S( -8, 13) },
    { S( -7,  0), S(  7,-11), S( -3, 12), S(-13, 21), S(  5, 25), S(-16, 19), S( 10,  4), S( -8,  7) }
   };
 
@@ -130,19 +114,26 @@ void init(const Variant* v) {
       if (PieceValue[MG][pt] > PieceValue[MG][strongestPiece])
           strongestPiece = pt;
 
+  Value maxPromotion = VALUE_ZERO;
+  for (PieceType pt : v->promotionPieceTypes)
+      maxPromotion = std::max(maxPromotion, PieceValue[EG][pt]);
+
   for (PieceType pt = PAWN; pt <= KING; ++pt)
   {
       Piece pc = make_piece(WHITE, pt);
 
-      PieceValue[MG][~pc] = PieceValue[MG][pc];
-      PieceValue[EG][~pc] = PieceValue[EG][pc];
-
       Score score = make_score(PieceValue[MG][pc], PieceValue[EG][pc]);
+
+      // Consider promotion types in pawn score
+      if (pt == PAWN)
+          score -= make_score(0, (QueenValueEg - maxPromotion) / 100);
 
       // Scale slider piece values with board size
       const PieceInfo* pi = pieceMap.find(pt)->second;
       bool isSlider = pi->sliderQuiet.size() || pi->sliderCapture.size() || pi->hopperQuiet.size() || pi->hopperCapture.size();
       bool isPawn = !isSlider && pi->stepsQuiet.size() && !std::any_of(pi->stepsQuiet.begin(), pi->stepsQuiet.end(), [](Direction d) { return d < SOUTH / 2; });
+      bool isSlowLeaper = !isSlider && !std::any_of(pi->stepsQuiet.begin(), pi->stepsQuiet.end(), [](Direction d) { return dist(d) > 1; });
+
       if (isSlider)
       {
           constexpr int lc = 5;
@@ -188,7 +179,7 @@ void init(const Variant* v) {
 
       for (Square s = SQ_A1; s <= SQ_MAX; ++s)
       {
-          File f = std::max(std::min(file_of(s), File(v->maxFile - file_of(s))), FILE_A);
+          File f = std::max(File(edge_distance(file_of(s), v->maxFile)), FILE_A);
           Rank r = rank_of(s);
           psq[ pc][ s] = score + (  pt == PAWN  ? PBonus[std::min(r, RANK_8)][std::min(file_of(s), FILE_H)]
                                   : pt == KING  ? KingBonus[std::min(r, RANK_8)][std::min(f, FILE_D)] * (1 + v->capturesToHand)
@@ -196,13 +187,18 @@ void init(const Variant* v) {
                                   : pt == HORSE ? Bonus[KNIGHT][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                   : isSlider    ? make_score(5, 5) * (2 * f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile - 1)
                                   : isPawn      ? make_score(5, 5) * (2 * f - v->maxFile)
-                                                : make_score(10, 10) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));
+                                                : make_score(10, 10) * (1 + isSlowLeaper) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));
           if (pt == SOLDIER && r < v->soldierPromotionRank)
               psq[pc][s] -= score * (v->soldierPromotionRank - r) / (4 + f);
-          psq[~pc][rank_of(s) <= v->maxRank ? relative_square(BLACK, s, v->maxRank) : s] = -psq[pc][s];
+          if (v->enclosingDrop == REVERSI)
+          {
+              if (f == FILE_A && (r == RANK_1 || r == v->maxRank))
+                  psq[pc][s] += make_score(1000, 1000);
+          }
+          psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
       }
       // pieces in pocket
-      psq[ pc][SQ_NONE] = score + make_score(45, 10);
+      psq[ pc][SQ_NONE] = score + make_score(35, 10) * (1 + !(isSlider || pt == SHOGI_PAWN));
       psq[~pc][SQ_NONE] = -psq[pc][SQ_NONE];
   }
 }

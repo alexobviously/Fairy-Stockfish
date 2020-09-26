@@ -76,6 +76,8 @@ struct Variant {
   bool firstRankPawnDrops = false;
   bool promotionZonePawnDrops = false;
   bool dropOnTop = false;
+  EnclosingRule enclosingDrop = NO_ENCLOSING;
+  Bitboard enclosingDropStart = 0;
   Bitboard whiteDropRegion = AllSquares;
   Bitboard blackDropRegion = AllSquares;
   bool sittuyinRookDrop = false;
@@ -84,15 +86,17 @@ struct Variant {
   bool shogiDoubledPawn = true;
   bool immobilityIllegal = false;
   bool gating = false;
+  bool arrowGating = false;
   bool seirawanGating = false;
   bool commitGates = false;
   bool cambodianMoves = false;
   Bitboard diagonalLines = 0;
-  bool kingPass = false;
-  bool kingPassOnStalemate = false;
+  bool pass = false;
+  bool passOnStalemate = false;
   bool makpongRule = false;
   bool flyingGeneral = false;
   Rank soldierPromotionRank = RANK_1;
+  EnclosingRule flipEnclosedPieces = NO_ENCLOSING;
   // game end
   int nMoveRule = 50;
   int nFoldRule = 3;

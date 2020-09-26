@@ -33,11 +33,12 @@ namespace {
 
   // Pawn penalties
   constexpr Score Backward      = S( 9, 24);
-  constexpr Score BlockedStorm  = S(82, 82);
   constexpr Score Doubled       = S(11, 56);
   constexpr Score Isolated      = S( 5, 15);
   constexpr Score WeakLever     = S( 0, 56);
   constexpr Score WeakUnopposed = S(13, 27);
+
+  constexpr Score BlockedStorm[RANK_NB]  = {S( 0, 0), S( 0, 0), S( 76, 78), S(-10, 15), S(-7, 10), S(-4, 6), S(-1, 2)};
 
   // Connected pawn bonus
   constexpr int Connected[RANK_NB] = { 0, 7, 8, 12, 29, 48, 86 };
@@ -68,7 +69,7 @@ namespace {
   template<Color Us>
   Score evaluate(const Position& pos, Pawns::Entry* e) {
 
-    constexpr Color     Them = (Us == WHITE ? BLACK : WHITE);
+    constexpr Color     Them = ~Us;
     constexpr Direction Up   = pawn_push(Us);
 
     Bitboard neighbours, stoppers, support, phalanx, opposed;
@@ -86,6 +87,7 @@ namespace {
     e->passedPawns[Us] = 0;
     e->kingSquares[Us] = SQ_NONE;
     e->pawnAttacks[Us] = e->pawnAttacksSpan[Us] = pawn_attacks_bb<Us>(ourPawns);
+    e->blockedCount += popcount(shift<Up>(ourPawns) & (theirPawns | doubleAttackThem));
 
     // Loop through all pawns of the current color and score each pawn
     while ((s = *pl++) != SQ_NONE)
@@ -98,8 +100,8 @@ namespace {
         opposed    = theirPawns & forward_file_bb(Us, s);
         blocked    = is_ok(s + Up) ? theirPawns & (s + Up) : Bitboard(0);
         stoppers   = theirPawns & passed_pawn_span(Us, s);
-        lever      = theirPawns & PseudoAttacks[Us][PAWN][s];
-        leverPush  = relative_rank(Them, s, pos.max_rank()) > RANK_1 ? theirPawns & PseudoAttacks[Us][PAWN][s + Up] : Bitboard(0);
+        lever      = theirPawns & pawn_attacks_bb(Us, s);
+        leverPush  = relative_rank(Them, s, pos.max_rank()) > RANK_1 ? theirPawns & pawn_attacks_bb(Us, s + Up) : Bitboard(0);
         doubled    = r > RANK_1 ? ourPawns & (s - Up) : Bitboard(0);
         neighbours = ourPawns   & adjacent_files_bb(s);
         phalanx    = neighbours & rank_bb(s);
@@ -119,11 +121,14 @@ namespace {
         // (a) there is no stoppers except some levers
         // (b) the only stoppers are the leverPush, but we outnumber them
         // (c) there is only one front stopper which can be levered.
+        //     (Refined in Evaluation::passed)
         passed =   !(stoppers ^ lever)
                 || (   !(stoppers ^ leverPush)
                     && popcount(phalanx) >= popcount(leverPush))
                 || (   stoppers == blocked && r >= RANK_5
                     && (shift<Up>(support) & ~(theirPawns | doubleAttackThem)));
+
+        passed &= !(forward_file_bb(Us, s) & ourPawns);
 
         // Passed pawns will be properly scored later in evaluation when we have
         // full attack info.
@@ -133,17 +138,24 @@ namespace {
         // Score this pawn
         if ((support | phalanx) && (r < pos.promotion_rank() || !pos.mandatory_pawn_promotion()))
         {
-            int v =  Connected[r] * (2 + bool(phalanx) - bool(opposed)) * (r == RANK_2 && pos.captures_to_hand() ? 3 : 1)
+            int v =  Connected[r] * (4 + 2 * bool(phalanx) - 2 * bool(opposed) - bool(blocked)) / 2 * (r == RANK_2 && pos.captures_to_hand() ? 3 : 1)
                    + 21 * popcount(support);
             if (r >= RANK_4 && pos.count<PAWN>(Us) > popcount(pos.board_bb()) / 4)
-                v = std::max(v, popcount(support | phalanx) * 50) / (opposed ? 2 : 1);
+                v = popcount(support | phalanx) * 50 / (opposed ? 2 : 1);
 
             score += make_score(v, v * (r - 2) / 4);
         }
 
         else if (!neighbours)
-            score -=   Isolated * (1 + 2 * pos.must_capture())
-                     + WeakUnopposed * !opposed;
+        {
+            if (     opposed
+                &&  (ourPawns & forward_file_bb(Them, s))
+                && !(theirPawns & adjacent_files_bb(s)))
+                score -= Doubled * (1 + 2 * pos.must_capture());
+            else
+                score -=   Isolated * (1 + 2 * pos.must_capture())
+                         + WeakUnopposed * !opposed;
+        }
 
         else if (backward)
             score -=   Backward
@@ -195,6 +207,7 @@ Entry* probe(const Position& pos) {
       return e;
 
   e->key = key;
+  e->blockedCount = 0;
   e->scores[WHITE] = evaluate<WHITE>(pos, e);
   e->scores[BLACK] = evaluate<BLACK>(pos, e);
 
@@ -208,15 +221,15 @@ Entry* probe(const Position& pos) {
 template<Color Us>
 Score Entry::evaluate_shelter(const Position& pos, Square ksq) {
 
-  constexpr Color Them = (Us == WHITE ? BLACK : WHITE);
+  constexpr Color Them = ~Us;
 
   Bitboard b = pos.pieces(PAWN, SHOGI_PAWN) & ~forward_ranks_bb(Them, ksq);
-  Bitboard ourPawns = b & pos.pieces(Us);
+  Bitboard ourPawns = b & pos.pieces(Us) & ~pawnAttacks[Them];
   Bitboard theirPawns = b & pos.pieces(Them);
 
   Score bonus = make_score(5, 5);
 
-  File center = clamp(file_of(ksq), FILE_B, File(pos.max_file() - 1));
+  File center = Utility::clamp(file_of(ksq), FILE_B, File(pos.max_file() - 1));
   for (File f = File(center - 1); f <= File(center + 1); ++f)
   {
       b = ourPawns & file_bb(f);
@@ -225,12 +238,12 @@ Score Entry::evaluate_shelter(const Position& pos, Square ksq) {
       b = theirPawns & file_bb(f);
       int theirRank = b ? relative_rank(Us, frontmost_sq(Them, b), pos.max_rank()) : 0;
 
-      int d = std::min(std::min(f, File(pos.max_file() - f)), FILE_D);
+      int d = std::min(File(edge_distance(f, pos.max_file())), FILE_D);
       bonus += make_score(ShelterStrength[d][ourRank], 0) * (1 + (pos.captures_to_hand() && ourRank <= RANK_2)
                                                                + (pos.check_counting() && d == 0 && ourRank == RANK_2));
 
       if (ourRank && (ourRank == theirRank - 1))
-          bonus -= BlockedStorm * int(theirRank == RANK_3);
+          bonus -= BlockedStorm[theirRank];
       else
           bonus -= make_score(UnblockedStorm[d][theirRank], 0);
   }
@@ -262,9 +275,9 @@ Score Entry::do_king_safety(const Position& pos) {
 
   // In endgame we like to bring our king near our closest pawn
   Bitboard pawns = pos.pieces(Us, PAWN);
-  int minPawnDist = pawns ? 8 : 0;
+  int minPawnDist = 6;
 
-  if (pawns & PseudoAttacks[Us][KING][ksq])
+  if (pawns & attacks_bb<KING>(ksq))
       minPawnDist = 1;
   else while (pawns)
       minPawnDist = std::min(minPawnDist, distance(ksq, pop_lsb(&pawns)));

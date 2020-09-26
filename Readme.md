@@ -5,6 +5,7 @@
 [![Build Status](https://travis-ci.org/ianfab/Fairy-Stockfish.svg?branch=master)](https://travis-ci.org/ianfab/Fairy-Stockfish)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/ianfab/Fairy-Stockfish?branch=master&svg=true)](https://ci.appveyor.com/project/ianfab/Fairy-Stockfish/branch/master)
 [![PyPI version](https://badge.fury.io/py/pyffish.svg)](https://badge.fury.io/py/pyffish)
+[![NPM version](https://img.shields.io/npm/v/ffish.svg?sanitize=true)](https://www.npmjs.com/package/ffish)
 
 Fairy-Stockfish is a chess variant engine derived from [Stockfish](https://github.com/official-stockfish/Stockfish/) designed for the support of fairy chess variants and easy extensibility with more games. It can play various regional, historical, and modern chess variants as well as [games with user-defined rules](https://github.com/ianfab/Fairy-Stockfish/wiki/Variant-configuration). For [compatibility with graphical user interfaces](https://github.com/ianfab/Fairy-Stockfish/wiki/Usage) it supports the UCI, UCCI, USI, and CECP/XBoard protocols.
 
@@ -54,6 +55,8 @@ The games currently supported besides chess are listed below. Fairy-Stockfish ca
 - [Dobutsu shogi](https://en.wikipedia.org/wiki/Dōbutsu_shōgi), [Goro goro shogi](https://en.wikipedia.org/wiki/D%C5%8Dbutsu_sh%C5%8Dgi#Variation)
 
 ### Related games
+- [Amazons](https://en.wikipedia.org/wiki/Game_of_the_Amazons)
+- [Ataxx](https://en.wikipedia.org/wiki/Ataxx)
 - [Breakthrough](https://en.wikipedia.org/wiki/Breakthrough_(board_game))
 - [Clobber](https://en.wikipedia.org/wiki/Clobber)
 
@@ -61,9 +64,23 @@ The games currently supported besides chess are listed below. Fairy-Stockfish ca
 
 See the [Fairy-Stockfish Wiki](https://github.com/ianfab/Fairy-Stockfish/wiki) for more info, or if the required information is not available, open an [issue](https://github.com/ianfab/Fairy-Stockfish/issues).
 
-## Python binding
+## Bindings
 
-On top of the C++ engine, this project also includes the python binding [pyffish](https://pypi.org/project/pyffish/), which can be used as a chess variant library in python, like in the [pychess server](https://github.com/gbtami/pychess-variants). Pyffish is a lightweight wrapper around Fairy-Stockfish, only adding a single [source file](https://github.com/ianfab/Fairy-Stockfish/blob/master/src/pyffish.cpp). It supports move, SAN, and FEN generation, as well as checking of game end conditions.
+Besides the C++ engine, this project also includes bindings for other programming languages in order to be able to use it as a library for chess variants. They support move, SAN, and FEN generation, as well as checking of game end conditions for all variants supported by Fairy-Stockfish. Since the bindings are using the C++ code, they are very performant compared to libraries directly written in the respective target language.  
+
+### Python
+
+The python binding [pyffish](https://pypi.org/project/pyffish/) contributed by [@gbtami](https://github.com/gbtami) is implemented in [pyffish.cpp](https://github.com/ianfab/Fairy-Stockfish/blob/master/src/pyffish.cpp). It is e.g. used in the backend for the [pychess server](https://github.com/gbtami/pychess-variants).
+
+### Javascript
+
+The javascript binding ffish.js contributed by [@QueensGambit](https://github.com/QueensGambit) is implemented in [ffishjs.cpp](https://github.com/ianfab/Fairy-Stockfish/blob/master/src/ffishjs.cpp). The compilation/binding to javascript is done using emscripten, see the [readme](https://github.com/ianfab/Fairy-Stockfish/tree/master/tests/js).
+
+## Ports
+
+### WASM
+
+A port of Fairy-Stockfish to WebAssembly is maintained at https://github.com/ianfab/stockfish.wasm.
 
 # Stockfish
 ## Overview
@@ -110,7 +127,7 @@ Currently, Stockfish has the following UCI options:
     this equal to the number of CPU cores available.
 
   * #### Hash
-    The size of the hash table in MB.
+    The size of the hash table in MB. It is recommended to set Hash after setting Threads.
 
   * #### Clear Hash
     Clear the hash table.
@@ -206,20 +223,50 @@ more compact than Nalimov tablebases, while still storing all information
 needed for optimal play and in addition being able to take into account
 the 50-move rule.
 
+## Large Pages
+
+Stockfish supports large pages on Linux and Windows. Large pages make
+the hash access more efficient, improving the engine speed, especially
+on large hash sizes. Typical increases are 5..10% in terms of nps, but
+speed increases up to 30% have been measured. The support is
+automatic. Stockfish attempts to use large pages when available and
+will fall back to regular memory allocation when this is not the case.
+
+### Support on Linux
+
+Large page support on Linux is obtained by the Linux kernel
+transparent huge pages functionality. Typically, transparent huge pages
+are already enabled and no configuration is needed.
+
+### Support on Windows
+
+The use of large pages requires "Lock Pages in Memory" privilege. See
+[Enable the Lock Pages in Memory Option (Windows)](https://docs.microsoft.com/en-us/sql/database-engine/configure-windows/enable-the-lock-pages-in-memory-option-windows)
+on how to enable this privilege. Logout/login may be needed
+afterwards. Due to memory fragmentation, it may not always be
+possible to allocate large pages even when enabled. A reboot
+might alleviate this problem. To determine whether large pages
+are in use, see the engine log.
 
 ## Compiling Stockfish yourself from the sources
 
-On Unix-like systems, it should be possible to compile Stockfish
-directly from the source code with the included Makefile.
+Stockfish has support for 32 or 64-bit CPUs, certain hardware
+instructions, big-endian machines such as Power PC, and other platforms.
 
-Stockfish has support for 32 or 64-bit CPUs, the hardware POPCNT
-instruction, big-endian machines such as Power PC, and other platforms.
+On Unix-like systems, it should be easy to compile Stockfish
+directly from the source code with the included Makefile in the folder
+`src`. In general it is recommended to run `make help` to see a list of make
+targets with corresponding descriptions.
 
-In general it is recommended to run `make help` to see a list of make
-targets with corresponding descriptions. When not using the Makefile to
-compile (for instance with Microsoft MSVC) you need to manually
-set/unset some switches in the compiler command line; see file *types.h*
-for a quick reference.
+```
+    cd src
+    make help
+    make build ARCH=x86-64-modern
+```
+
+When not using the Makefile to compile (for instance with Microsoft MSVC) you
+need to manually set/unset some switches in the compiler command line; see
+file *types.h* for a quick reference.
 
 When reporting an issue or a bug, please tell us which version and
 compiler you used to create your executable. These informations can
