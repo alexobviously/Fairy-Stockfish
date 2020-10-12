@@ -379,6 +379,91 @@ namespace {
       delete p2;
       return p;
   }
+  PieceInfo* hawk_piece(){
+      PieceInfo* p = new PieceInfo();
+      p->name = "hawk";
+      p->betza = "ADGH";
+      p->stepsQuiet = {2*NORTH, 3*NORTH, 2*EAST, 3*EAST, 2*SOUTH, 3*SOUTH, 2*WEST, 3*WEST,
+                       2*NORTH_EAST, 3*NORTH_EAST, 2*SOUTH_EAST, 3*SOUTH_EAST,
+                       2*NORTH_WEST, 3*NORTH_WEST, 2*SOUTH_WEST, 3*SOUTH_WEST};
+      p->stepsCapture = {2*NORTH, 3*NORTH, 2*EAST, 3*EAST, 2*SOUTH, 3*SOUTH, 2*WEST, 3*WEST,
+                         2*NORTH_EAST, 3*NORTH_EAST, 2*SOUTH_EAST, 3*SOUTH_EAST,
+                         2*NORTH_WEST, 3*NORTH_WEST, 2*SOUTH_WEST, 3*SOUTH_WEST};
+      return p;
+  }
+  PieceInfo* musketeer_elephant_piece(){
+      PieceInfo* p = new PieceInfo;
+      p->name = "musketeerElephant";
+      p->betza = "FWDA";
+      p->stepsQuiet = {SOUTH_WEST, SOUTH, SOUTH_EAST, WEST, EAST, NORTH_WEST, NORTH, NORTH_EAST,
+                       2*SOUTH_WEST, 2*SOUTH, 2*SOUTH_EAST, 2*WEST, 2*EAST, 2*NORTH_WEST, 2*NORTH, 2*NORTH_EAST};
+      p->stepsCapture = {SOUTH_WEST, SOUTH, SOUTH_EAST, WEST, EAST, NORTH_WEST, NORTH, NORTH_EAST,
+                         2*SOUTH_WEST, 2*SOUTH, 2*SOUTH_EAST, 2*WEST, 2*EAST, 2*NORTH_WEST, 2*NORTH, 2*NORTH_EAST};
+      return p;
+  }
+  PieceInfo* unicorn_piece(){
+      PieceInfo* p = new PieceInfo();
+      p->name = "unicorn";
+      p->betza = "NC";
+      p->stepsQuiet = {2 * SOUTH + WEST, 2 * SOUTH + EAST, SOUTH + 2 * WEST, SOUTH + 2 * EAST,
+                       NORTH + 2 * WEST, NORTH + 2 * EAST, 2 * NORTH + WEST, 2 * NORTH + EAST,
+                       3 * SOUTH + WEST, 3 * SOUTH + EAST, SOUTH + 3 * WEST, SOUTH + 3 * EAST,
+                       NORTH + 3 * WEST, NORTH + 3 * EAST, 3 * NORTH + WEST, 3 * NORTH + EAST};
+      p->stepsCapture = {2 * SOUTH + WEST, 2 * SOUTH + EAST, SOUTH + 2 * WEST, SOUTH + 2 * EAST,
+                         NORTH + 2 * WEST, NORTH + 2 * EAST, 2 * NORTH + WEST, 2 * NORTH + EAST,
+                         3 * SOUTH + WEST, 3 * SOUTH + EAST, SOUTH + 3 * WEST, SOUTH + 3 * EAST,
+                         NORTH + 3 * WEST, NORTH + 3 * EAST, 3 * NORTH + WEST, 3 * NORTH + EAST};
+      return p;
+  }
+  PieceInfo* musketeer_cannon_piece(){
+      PieceInfo* p = new PieceInfo();
+      p->name = "musketeerCannon";
+      p->betza = "FWDsN";
+      p->stepsQuiet = {SOUTH_WEST, SOUTH, SOUTH_EAST, WEST, EAST, NORTH_WEST, NORTH, NORTH_EAST,
+                       2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST, 2 * EAST + NORTH, 2 * EAST + SOUTH,
+                       2 * WEST + NORTH, 2 * WEST + SOUTH};
+      p->stepsCapture = {SOUTH_WEST, SOUTH, SOUTH_EAST, WEST, EAST, NORTH_WEST, NORTH, NORTH_EAST,
+                         2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST, 2 * EAST + NORTH, 2 * EAST + SOUTH,
+                         2 * WEST + NORTH, 2 * WEST + SOUTH};
+      return p;
+  }
+  PieceInfo* spider_piece(){
+      PieceInfo* p = new PieceInfo();
+      p->name = "spider";
+      p->betza = "B2ND";
+      p->stepsQuiet = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST, 2 * NORTH + EAST, 2 * NORTH + WEST,
+                       2 * SOUTH + EAST, 2 * SOUTH + WEST, 2 * EAST + NORTH, 2 * EAST + SOUTH,
+                       2 * WEST + NORTH, 2 * WEST + SOUTH};
+      p->stepsCapture = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST, 2 * NORTH + EAST, 2 * NORTH + WEST,
+                         2 * SOUTH + EAST, 2 * SOUTH + WEST, 2 * EAST + NORTH, 2 * EAST + SOUTH,
+                         2 * WEST + NORTH, 2 * WEST + SOUTH};
+      // TODO: limited slider - BISHOP: 2
+      p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      return p;
+  }
+  PieceInfo* leopard_piece(){
+      PieceInfo* p = knight_piece();
+      p->name = "leopard";
+      p->betza = "F2N";
+      // TODO: limited slider - BISHOP: 2
+      p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      return p;
+  }
+  PieceInfo* fortress_piece(){
+      PieceInfo* p = new PieceInfo();
+      p->name = "fortress";
+      p->betza = "B3vND";
+      p->stepsQuiet = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST,
+                       2 * NORTH + EAST, 2 * NORTH + WEST, 2 * SOUTH + EAST, 2 * SOUTH + WEST};
+      p->stepsCapture = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST,
+                         2 * NORTH + EAST, 2 * NORTH + WEST, 2 * SOUTH + EAST, 2 * SOUTH + WEST};
+      // TODO: limited slider - BISHOP: 3
+      p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
+      return p;
+  }
 }
 
 void PieceMap::init() {
@@ -422,6 +507,13 @@ void PieceMap::init() {
   add(COMMONER, commoner_piece());
   add(CENTAUR, centaur_piece());
   add(KING, king_piece());
+  add(HAWK, hawk_piece());
+  add(MUSKETEER_ELEPHANT, musketeer_elephant_piece());
+  add(UNICORN, unicorn_piece());
+  add(MUSKETEER_CANNON, musketeer_cannon_piece());
+  add(SPIDER, spider_piece());
+  add(LEOPARD, leopard_piece());
+  add(FORTRESS, fortress_piece());
 }
 
 void PieceMap::add(PieceType pt, const PieceInfo* p) {
