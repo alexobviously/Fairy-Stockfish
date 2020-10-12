@@ -437,7 +437,7 @@ namespace {
       p->stepsCapture = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST, 2 * NORTH + EAST, 2 * NORTH + WEST,
                          2 * SOUTH + EAST, 2 * SOUTH + WEST, 2 * EAST + NORTH, 2 * EAST + SOUTH,
                          2 * WEST + NORTH, 2 * WEST + SOUTH};
-      // TODO: limited slider - BISHOP: 2
+      p->sliderLimit = 2;
       p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       return p;
@@ -446,7 +446,7 @@ namespace {
       PieceInfo* p = knight_piece();
       p->name = "leopard";
       p->betza = "F2N";
-      // TODO: limited slider - BISHOP: 2
+      p->sliderLimit = 2;
       p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       return p;
@@ -459,7 +459,7 @@ namespace {
                        2 * NORTH + EAST, 2 * NORTH + WEST, 2 * SOUTH + EAST, 2 * SOUTH + WEST};
       p->stepsCapture = {2 * NORTH, 2 * SOUTH, 2 * EAST, 2 * WEST,
                          2 * NORTH + EAST, 2 * NORTH + WEST, 2 * SOUTH + EAST, 2 * SOUTH + WEST};
-      // TODO: limited slider - BISHOP: 3
+      p->sliderLimit = 3;
       p->sliderQuiet = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       p->sliderCapture = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
       return p;

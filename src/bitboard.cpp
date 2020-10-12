@@ -80,7 +80,7 @@ namespace {
 #endif
 
   template <MovementType MT>
-  Bitboard sliding_attack(std::vector<Direction> directions, Square sq, Bitboard occupied, Color c = WHITE) {
+  Bitboard sliding_attack(std::vector<Direction> directions, Square sq, Bitboard occupied, Color c = WHITE, int slideLimit = FILE_MAX) {
     assert(MT != LAME_LEAPER);
 
     Bitboard attack = 0;
@@ -88,10 +88,12 @@ namespace {
     for (Direction d : directions)
     {
         bool hurdle = false;
+        int slideDistance = 1;
         for (Square s = sq + (c == WHITE ? d : -d);
-             is_ok(s) && distance(s, s - (c == WHITE ? d : -d)) == 1;
+             is_ok(s) && distance(s, s - (c == WHITE ? d : -d)) == 1 && slideDistance <= slideLimit;
              s += (c == WHITE ? d : -d))
         {
+            slideDistance++;
             if (MT != HOPPER || hurdle)
                 attack |= s;
 
@@ -301,9 +303,9 @@ void Bitboards::init() {
                   if (!pi->lameLeaper)
                       LeaperMoves[c][pt][s] |= safe_destination(s, c == WHITE ? d : -d);
               }
-              PseudoAttacks[c][pt][s] |= sliding_attack<RIDER>(pi->sliderCapture, s, 0, c);
+              PseudoAttacks[c][pt][s] |= sliding_attack<RIDER>(pi->sliderCapture, s, 0, c, (pi->sliderLimit > 0)?pi->sliderLimit:FILE_MAX);
               PseudoAttacks[c][pt][s] |= sliding_attack<RIDER>(pi->hopperCapture, s, 0, c);
-              PseudoMoves[c][pt][s] |= sliding_attack<RIDER>(pi->sliderQuiet, s, 0, c);
+              PseudoMoves[c][pt][s] |= sliding_attack<RIDER>(pi->sliderQuiet, s, 0, c, (pi->sliderLimit > 0)?pi->sliderLimit:FILE_MAX);
               PseudoMoves[c][pt][s] |= sliding_attack<RIDER>(pi->hopperQuiet, s, 0, c);
           }
       }
