@@ -395,11 +395,11 @@ namespace {
         v->add_piece(ARCHBISHOP, 'a');
         v->add_piece(CHANCELLOR, 'o');
         v->add_piece(AMAZON, 'd'); // called Dragon in Musketeer
-        v->add_piece(LEOPARD, 'l'); // UNFINISHED
+        v->add_piece(LEOPARD, 'l');
         v->add_piece(HAWK, 'h');
         v->add_piece(UNICORN, 'u');
-        v->add_piece(SPIDER, 's'); // UNFINISHED
-        v->add_piece(FORTRESS, 'f'); // UNFINISHED
+        v->add_piece(SPIDER, 's');
+        v->add_piece(FORTRESS, 'f');
         v->add_piece(MUSKETEER_ELEPHANT, 'e');
         v->add_piece(MUSKETEER_CANNON, 'c');
         v->startFen = "ao******/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/AO****** w KQkq - 0 1";

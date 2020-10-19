@@ -253,6 +253,8 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   ss >> std::noskipws;
 
   Square sq = SQ_A1 + max_rank() * NORTH;
+  int commitFile = 0;
+  int rank = 0;
 
   // 1. Piece placement
   while ((ss >> token) && !isspace(token))
@@ -271,15 +273,23 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
 
       else if (token == '/')
       {
+          ++rank;
+          commitFile = 0;
           sq += 2 * SOUTH + (FILE_MAX - max_file()) * EAST;
           if (!is_ok(sq))
               break;
       }
 
+      else if(token == '*') ++commitFile;
+
       else if ((idx = piece_to_char().find(token)) != string::npos || (idx = piece_to_char_synonyms().find(token)) != string::npos)
       {
           if (ss.peek() == '~')
               ss >> token;
+          if(v->commitGates && (rank == 0 || rank == FILE_NB+1){
+              commit_piece(Piece(idx), commitFile);
+              ++commitFile;
+          }
           put_piece(Piece(idx), sq, token == '~');
           ++sq;
       }

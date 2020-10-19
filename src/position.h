@@ -310,6 +310,7 @@ private:
   const Variant* var;
   bool chess960;
   int pieceCountInHand[COLOR_NB][PIECE_TYPE_NB];
+  int committedGates[COLOR_NB][FILE_NB];
   Bitboard promotedPieces;
   void add_to_hand(Piece pc);
   void remove_from_hand(Piece pc);
@@ -1189,6 +1190,26 @@ inline void Position::remove_from_hand(Piece pc) {
   pieceCountInHand[color_of(pc)][type_of(pc)]--;
   pieceCountInHand[color_of(pc)][ALL_PIECES]--;
   psq -= PSQT::psq[pc][SQ_NONE];
+}
+
+inline void Position::commit_piece(Piece pc, File fl){
+    committedGates[color_of(pc)][fl] = type_of(pc);
+}
+
+inline void Position::uncommit_piece(Color cl, File fl){
+    committedGates[cl][fl] = NO_PIECE;
+}
+
+inline bool Position::has_committed_piece(Color cl, File fl){
+    return committedGates[cl][fl] > NO_PIECE;
+}
+
+inline void Position::drop_committed_piece(Color cl, File fl){
+    if(has_committed_piece(cl, fl)){
+        Square dropSquare = (cl == WHITE)?fl:SQUARE_NB-8+fl;
+        put_piece(committedGates[cl][fl], dropSquare, false, NO_PIECE);
+        uncommit_piece(cl, fl);
+    }
 }
 
 inline void Position::drop_piece(Piece pc_hand, Piece pc_drop, Square s) {
