@@ -26,6 +26,7 @@
 #include <memory> // For std::unique_ptr
 #include <string>
 #include <functional>
+#include <iostream>
 
 #include "bitboard.h"
 #include "types.h"
@@ -66,6 +67,7 @@ struct StateInfo {
   bool       bikjang;
   bool       pass;
   int        repetition;
+  PieceType  removedGatingType;
 };
 
 
@@ -310,12 +312,16 @@ private:
   const Variant* var;
   bool chess960;
   int pieceCountInHand[COLOR_NB][PIECE_TYPE_NB];
-  int committedGates[COLOR_NB][FILE_NB];
+  PieceType committedGates[COLOR_NB][FILE_NB];
   Bitboard promotedPieces;
   void add_to_hand(Piece pc);
   void remove_from_hand(Piece pc);
   void drop_piece(Piece pc_hand, Piece pc_drop, Square s);
   void undrop_piece(Piece pc_hand, Square s);
+  void commit_piece(Piece pc, File fl);
+  void uncommit_piece(Color cl, File fl);
+  bool has_committed_piece(Color cl, File fl) const;
+  PieceType drop_committed_piece(Color cl, File fl);
 };
 
 namespace PSQT {
@@ -1077,16 +1083,21 @@ inline Thread* Position::this_thread() const {
 
 inline void Position::put_piece(Piece pc, Square s, bool isPromoted, Piece unpromotedPc) {
 
+  //std::cout << "P\n";
   board[s] = pc;
   byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
   byColorBB[color_of(pc)] |= s;
+  //std::cout << "Q\n";
   index[s] = pieceCount[pc]++;
   pieceList[pc][index[s]] = s;
+  //std::cout << "R\n";
   pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
   psq += PSQT::psq[pc][s];
+  //std::cout << "S\n";
   if (isPromoted)
       promotedPieces |= s;
   unpromotedBoard[s] = unpromotedPc;
+  //std::cout << "T\n";
 }
 
 inline void Position::remove_piece(Square s) {
@@ -1193,23 +1204,33 @@ inline void Position::remove_from_hand(Piece pc) {
 }
 
 inline void Position::commit_piece(Piece pc, File fl){
+  std::cout << "~~" << pc << " " << fl << " " << color_of(pc) << " " << FILE_NB << " " << COLOR_NB << " " << type_of(pc) << "\n";
+  std::cout << "commit_piece\n";
     committedGates[color_of(pc)][fl] = type_of(pc);
+  std::cout << "-success! committedGates[" << color_of(pc) << "][" << fl << "] = " << type_of(pc) << "(" << committedGates[color_of(pc)][fl] << ")\n";
 }
 
 inline void Position::uncommit_piece(Color cl, File fl){
-    committedGates[cl][fl] = NO_PIECE;
+  std::cout << "uncommit_piece\n";
+    committedGates[cl][fl] = NO_PIECE_TYPE;
 }
 
-inline bool Position::has_committed_piece(Color cl, File fl){
-    return committedGates[cl][fl] > NO_PIECE;
+inline bool Position::has_committed_piece(Color cl, File fl) const {
+  std::cout << "has_committed_piece: "<<"cl: " << cl << " fl: " << fl << " result: " << committedGates[cl][fl] <<"\n";
+  std::cout << "---check committedGates[" << cl << "][" << fl << "] == " << committedGates[cl][fl] << "\n";
+    return committedGates[cl][fl] > NO_PIECE_TYPE;
 }
 
-inline void Position::drop_committed_piece(Color cl, File fl){
+inline PieceType Position::drop_committed_piece(Color cl, File fl){
+  std::cout << "drop_committed_piece\n";
     if(has_committed_piece(cl, fl)){
-        Square dropSquare = (cl == WHITE)?fl:SQUARE_NB-8+fl;
-        put_piece(committedGates[cl][fl], dropSquare, false, NO_PIECE);
+        Square dropSquare = make_square(fl, (cl == WHITE)? RANK_1 : max_rank());
+        PieceType committedPieceType = committedGates[cl][fl];
+        put_piece(make_piece(cl, committedPieceType), dropSquare, false, NO_PIECE);
         uncommit_piece(cl, fl);
+        return committedPieceType;
     }
+    else return NO_PIECE_TYPE;
 }
 
 inline void Position::drop_piece(Piece pc_hand, Piece pc_drop, Square s) {

@@ -67,7 +67,9 @@ namespace {
         return;
 
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
+    std::cout <<"POSITION " << Options["UCI_Variant"] << " ^^ " << variants.find(Options["UCI_Variant"])->second->startFen << "\n";
     pos.set(variants.find(Options["UCI_Variant"])->second, fen, Options["UCI_Chess960"], &states->back(), Threads.main(), sfen);
+    std::cout <<"~POSITION " << Options["UCI_Variant"] << " ^^ " << pos.fen() << "\n";
 
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
@@ -113,6 +115,7 @@ namespace {
 
   void go(Position& pos, istringstream& is, StateListPtr& states, const std::vector<Move>& banmoves = {}) {
 
+    std::cout << "GO: " << pos.fen() << "\n";
     Search::LimitsType limits;
     string token;
     bool ponderMode = false;
@@ -259,6 +262,7 @@ void UCI::loop(int argc, char* argv[]) {
   string token, cmd;
   StateListPtr states(new std::deque<StateInfo>(1));
 
+    std::cout <<"UCI LOOP " << Options["UCI_Variant"] << " ^^ " << variants.find(Options["UCI_Variant"])->second->startFen;
   assert(variants.find(Options["UCI_Variant"])->second != nullptr);
   pos.set(variants.find(Options["UCI_Variant"])->second, variants.find(Options["UCI_Variant"])->second->startFen, false, &states->back(), Threads.main());
 

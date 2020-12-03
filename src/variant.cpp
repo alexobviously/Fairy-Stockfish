@@ -391,9 +391,9 @@ namespace {
     Variant* musketeer_variant() {
         Variant* v = chess_variant();
         v->variantTemplate = "seirawan";
-        v->pieceToCharTable = "PNBRQ.O..........AD..Kpnbrq.o..........ad..k";
+        v->pieceToCharTable = "PNBRQ.C..........AD..Kpnbrq.c..........ad..k";
         v->add_piece(ARCHBISHOP, 'a');
-        v->add_piece(CHANCELLOR, 'o');
+        v->add_piece(CHANCELLOR, 'c');
         v->add_piece(AMAZON, 'd'); // called Dragon in Musketeer
         v->add_piece(LEOPARD, 'l');
         v->add_piece(HAWK, 'h');
@@ -401,10 +401,8 @@ namespace {
         v->add_piece(SPIDER, 's');
         v->add_piece(FORTRESS, 'f');
         v->add_piece(MUSKETEER_ELEPHANT, 'e');
-        v->add_piece(MUSKETEER_CANNON, 'c');
-        v->startFen = "ao******/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/AO****** w KQkq - 0 1";
-        v->gating = true;
-        v->seirawanGating = true;
+        v->add_piece(MUSKETEER_CANNON, 'o');
+        v->startFen = "hd****us/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/HD****US w KQkq - 0 1";
         v->commitGates = true;
         v->promotionPieceTypes = {AMAZON, ARCHBISHOP, CHANCELLOR, QUEEN, ROOK, BISHOP, KNIGHT};
         return v;

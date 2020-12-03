@@ -24,6 +24,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -250,16 +251,22 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   var = v;
   st = si;
 
+  //std::cout << "1\n";
+
   ss >> std::noskipws;
 
   Square sq = SQ_A1 + max_rank() * NORTH;
   int commitFile = 0;
   int rank = 0;
 
+  //std::cout << "2\n";
+  //std::cout << fenStr << "\n";
+
   // 1. Piece placement
   while ((ss >> token) && !isspace(token))
   {
-      if (isdigit(token))
+      //std::cout << "M: " << token << " " << sq << "\n";
+      if (isdigit(token) && (!commit_gates() || (rank != 0 && rank != max_rank() + 2)))
       {
 #ifdef LARGEBOARDS
           if (isdigit(ss.peek()))
@@ -273,9 +280,11 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
 
       else if (token == '/')
       {
+          //std::cout << "3\n";
+          if(!commit_gates() || (rank != 0 && rank <= max_rank())) sq += 2 * SOUTH + (FILE_MAX - max_file()) * EAST;
           ++rank;
           commitFile = 0;
-          sq += 2 * SOUTH + (FILE_MAX - max_file()) * EAST;
+          //std::cout << is_ok(sq) << "\n";
           if (!is_ok(sq))
               break;
       }
@@ -284,27 +293,38 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
 
       else if ((idx = piece_to_char().find(token)) != string::npos || (idx = piece_to_char_synonyms().find(token)) != string::npos)
       {
-          if (ss.peek() == '~')
+          //std::cout << "A\n";
+          if(ss.peek() == '~')
               ss >> token;
-          if(v->commitGates && (rank == 0 || rank == FILE_NB+1){
-              commit_piece(Piece(idx), commitFile);
-              ++commitFile;
+        //std::cout << "checking token: " << token << ", rank: " << rank << " (" << RANK_NB+1 << ")\n";
+          if(v->commitGates && (rank == 0 || rank == max_rank() + 2)){
+              //std::cout << "C\n";
+            commit_piece(Piece(idx), File(commitFile));
+            //std::cout << "D\n";
+            ++commitFile;
           }
-          put_piece(Piece(idx), sq, token == '~');
-          ++sq;
+          else{
+              //std::cout << "E\n";
+            put_piece(Piece(idx), sq, token == '~');
+            //std::cout << "F\n";
+            ++sq;
+          }
       }
       // Promoted shogi pieces
       else if (token == '+')
       {
+          //std::cout << "G\n";
           ss >> token;
           idx = piece_to_char().find(token);
           put_piece(make_piece(color_of(Piece(idx)), promoted_piece_type(type_of(Piece(idx)))), sq, true, Piece(idx));
           ++sq;
+          //std::cout << "H\n";
       }
       // Stop before pieces in hand
       else if (token == '[')
           break;
   }
+  //std::cout << '4';
   // Pieces in hand
   if (!isspace(token))
       while ((ss >> token) && !isspace(token))
@@ -322,6 +342,8 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   if (sfen)
       sideToMove = ~sideToMove;
   ss >> token;
+
+  //std::cout << '5';
 
   // 3-4. Skip parsing castling and en passant flags if not present
   st->epSquare = SQ_NONE;
@@ -405,6 +427,8 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   // Check counter for nCheck
   ss >> std::skipws >> token >> std::noskipws;
 
+ // std::cout << '6';
+
   if (check_counting())
   {
       if (ss.peek() == '+')
@@ -466,11 +490,15 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
       st->rule50 = 0;
   }
 
+  //std::cout << '7';
+
   chess960 = isChess960 || v->chess960;
   thisThread = th;
   set_state(st);
 
   assert(pos_is_ok());
+
+  //std::cout << '8';
 
   return *this;
 }
@@ -526,6 +554,7 @@ void Position::set_state(StateInfo* si) const {
   si->pawnKey = Zobrist::noPawns;
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
   si->checkersBB = count<KING>(sideToMove) ? attackers_to(square<KING>(sideToMove), ~sideToMove) : Bitboard(0);
+  si->removedGatingType = NO_PIECE_TYPE;
 
   set_check_info(si);
 
@@ -600,6 +629,16 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
   int emptyCnt;
   std::ostringstream ss;
 
+  std::cout << "building fen...\n";
+
+  if(commit_gates()){
+      for(File f = FILE_A; f < max_file(); ++f){
+          if(has_committed_piece(BLACK, f)) ss << piece_to_char()[make_piece(BLACK, committedGates[BLACK][f])];
+          else ss << "*";
+      }
+      ss << "/";
+  }
+
   for (Rank r = max_rank(); r >= RANK_1; --r)
   {
       for (File f = FILE_A; f <= max_file(); ++f)
@@ -628,6 +667,14 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
 
       if (r > RANK_1)
           ss << '/';
+  }
+
+  if(commit_gates()){
+      ss << "/";
+      for(File f = FILE_A; f <= max_file(); ++f){
+          if(has_committed_piece(WHITE, f)) ss << piece_to_char()[make_piece(WHITE, committedGates[WHITE][f])];
+          else ss << "*";
+      }
   }
 
   // SFEN
@@ -1195,7 +1242,7 @@ bool Position::gives_check(Move m) const {
 /// moves should be filtered out before this function is called.
 
 void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
-
+std::cout << "in do_move\n";
   assert(is_ok(m));
   assert(&newSt != st);
 
@@ -1472,14 +1519,14 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Add gating piece
   if (is_gating(m))
   {
-      Square gate = gating_square(m);
-      Piece gating_piece = make_piece(us, gating_type(m));
-      put_piece(gating_piece, gate);
-      remove_from_hand(gating_piece);
-      st->gatesBB[us] ^= gate;
-      k ^= Zobrist::psq[gating_piece][gate];
-      st->materialKey ^= Zobrist::psq[gating_piece][pieceCount[gating_piece]];
-      st->nonPawnMaterial[us] += PieceValue[MG][gating_piece];
+    Square gate = gating_square(m);
+    Piece gating_piece = make_piece(us, gating_type(m));
+    put_piece(gating_piece, gate);
+    remove_from_hand(gating_piece);
+    st->gatesBB[us] ^= gate;
+    k ^= Zobrist::psq[gating_piece][gate];
+    st->materialKey ^= Zobrist::psq[gating_piece][pieceCount[gating_piece]];
+    st->nonPawnMaterial[us] += PieceValue[MG][gating_piece];
   }
 
   // Remove gates
@@ -1493,6 +1540,21 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           st->gatesBB[them] ^= to;
       if (seirawan_gating() && !count_in_hand(us, ALL_PIECES) && !captures_to_hand())
           st->gatesBB[us] = 0;
+  }
+
+  std::cout << "musketeer do_move check:: commit_gates(): " << commit_gates() << " us: " << us 
+  << " file_of(from): " << file_of(from) << " has_committed_piece(): \n" << has_committed_piece(us, file_of(from)) << "\n";
+  std::cout << committedGates << "\n";
+
+  // Musketeer gating
+  if(commit_gates()){
+      Rank r = rank_of(from);
+      if(((r == RANK_1 && us == WHITE) || (r == max_rank() && us == BLACK)) && has_committed_piece(us, file_of(from)))
+      {
+          st->removedGatingType = drop_committed_piece(us, file_of(from));
+      std::cout << "removedGatingType: " << st->removedGatingType << "\n";
+      } else st->removedGatingType = NO_PIECE_TYPE;
+      
   }
 
   // Update the key with the final value
@@ -1563,6 +1625,10 @@ void Position::undo_move(Move m) {
       board[gating_square(m)] = NO_PIECE;
       add_to_hand(gating_piece);
       st->gatesBB[us] |= gating_square(m);
+  }
+
+  if(st->removedGatingType > NO_PIECE_TYPE){
+      commit_piece(piece_on(from), file_of(from));
   }
 
   if (type_of(m) == PROMOTION)
@@ -1664,6 +1730,12 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
   board[Do ? from : to] = board[Do ? rfrom : rto] = NO_PIECE; // Since remove_piece doesn't do it for us
   put_piece(castlingKingPiece, Do ? to : from);
   put_piece(castlingRookPiece, Do ? rto : rfrom);
+
+  if(commit_gates()){
+      if(has_committed_piece(us, file_of(rfrom))){
+        drop_committed_piece(us, file_of(rfrom));
+      }
+  }
 }
 
 

@@ -182,27 +182,36 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
                                 const Search::LimitsType& limits, bool ponderMode) {
 
   main()->wait_for_search_finished();
-
+  std::cout << "a\n";
   main()->stopOnPonderhit = stop = abort = false;
   increaseDepth = true;
   main()->ponder = ponderMode;
   Search::Limits = limits;
   Search::RootMoves rootMoves;
+  std::cout << "b\n";
 
   for (const auto& m : MoveList<LEGAL>(pos))
       if (   (limits.searchmoves.empty() || std::count(limits.searchmoves.begin(), limits.searchmoves.end(), m))
           && (limits.banmoves.empty() || !std::count(limits.banmoves.begin(), limits.banmoves.end(), m)))
           rootMoves.emplace_back(m);
+  
+  std::cout << "c\n";
 
   if (!rootMoves.empty())
       Tablebases::rank_root_moves(pos, rootMoves);
+
+  std::cout << "d\n";
 
   // After ownership transfer 'states' becomes empty, so if we stop the search
   // and call 'go' again without setting a new position states.get() == NULL.
   assert(states.get() || setupStates.get());
 
+  std::cout << "e\n";
+
   if (states.get())
       setupStates = std::move(states); // Ownership transfer, states is now empty
+  
+  std::cout << "f\n";
 
   // We use Position::set() to set root position across threads. But there are
   // some StateInfo fields (previous, pliesFromNull, capturedPiece) that cannot
@@ -210,18 +219,24 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
   // we need to backup and later restore setupStates->back(). Note that setupStates
   // is shared by threads but is accessed in read-only mode.
   StateInfo tmp = setupStates->back();
-
+  std::cout << "g\n";
   for (Thread* th : *this)
   {
+    std:: cout << "x\n";
       th->nodes = th->tbHits = th->nmpMinPly = th->bestMoveChanges = 0;
       th->rootDepth = th->completedDepth = 0;
       th->rootMoves = rootMoves;
+      std::cout<<"y\n";
       th->rootPos.set(pos.variant(), pos.fen(), pos.is_chess960(), &setupStates->back(), th);
+      std::cout<<"z\n";
   }
+  std::cout << "h\n";
 
   setupStates->back() = tmp;
+  std::cout << "i\n";
 
   main()->start_searching();
+  std::cout << "j\n";
 }
 
 Thread* ThreadPool::get_best_thread() const {

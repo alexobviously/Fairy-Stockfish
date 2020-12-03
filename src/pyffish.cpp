@@ -4,6 +4,7 @@
 */
 
 #include <Python.h>
+#include <iostream>
 
 #include "misc.h"
 #include "types.h"
@@ -23,6 +24,7 @@
 static PyObject* PyFFishError;
 
 void buildPosition(Position& pos, StateListPtr& states, const char *variant, const char *fen, PyObject *moveList, const bool chess960) {
+    std::cout << "buildPosition "<<fen<<" \n";
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 
     const Variant* v = variants.find(std::string(variant))->second;
@@ -33,12 +35,15 @@ void buildPosition(Position& pos, StateListPtr& states, const char *variant, con
 
     // parse move list
     int numMoves = PyList_Size(moveList);
+    std::cout << "numMoves: " << numMoves << "\n";
     for (int i = 0; i < numMoves ; i++)
     {
         std::string moveStr(PyBytes_AS_STRING(PyUnicode_AsEncodedString( PyList_GetItem(moveList, i), "UTF-8", "strict")));
+        std::cout << "move " << i << ": " << moveStr << "\n";
         Move m;
         if ((m = UCI::to_move(pos, moveStr)) != MOVE_NONE)
         {
+            std::cout << "legal\n";
             // do the move
             states->emplace_back();
             pos.do_move(m, states->back());
@@ -50,7 +55,7 @@ void buildPosition(Position& pos, StateListPtr& states, const char *variant, con
 }
 
 extern "C" PyObject* pyffish_version(PyObject* self) {
-    return Py_BuildValue("(iii)", 0, 0, 51);
+    return Py_BuildValue("(iii)", 0, 0, 52);
 }
 
 extern "C" PyObject* pyffish_info(PyObject* self) {
