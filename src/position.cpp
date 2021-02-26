@@ -1549,12 +1549,13 @@ std::cout << "in do_move\n";
   // Musketeer gating
   if(commit_gates()){
       Rank r = rank_of(from);
-      if(((r == RANK_1 && us == WHITE) || (r == max_rank() && us == BLACK)) && has_committed_piece(us, file_of(from)))
-      {
-          st->removedGatingType = drop_committed_piece(us, file_of(from));
+      if(r == RANK_1 && has_committed_piece(WHITE, file_of(from))){
+          st->removedGatingType = drop_committed_piece(WHITE, file_of(from));
+      } else if(r == max_rank() && has_committed_piece(BLACK, file_of(from))){
+          st->removedGatingType = drop_committed_piece(BLACK, file_of(from));
+      }
+      else st->removedGatingType = NO_PIECE_TYPE;
       std::cout << "removedGatingType: " << st->removedGatingType << "\n";
-      } else st->removedGatingType = NO_PIECE_TYPE;
-      
   }
 
   // Update the key with the final value
