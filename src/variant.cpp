@@ -402,7 +402,8 @@ namespace {
         v->add_piece(FORTRESS, 'f');
         v->add_piece(MUSKETEER_ELEPHANT, 'e');
         v->add_piece(MUSKETEER_CANNON, 'o');
-        v->startFen = "hd****us/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/HD****US w KQkq - 0 1";
+        //"********/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/******** w KQkq - 0 1"
+        v->startFen = "********/rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/******** w KQkq - 0 1";
         v->commitGates = true;
         v->promotionPieceTypes = {AMAZON, ARCHBISHOP, CHANCELLOR, QUEEN, ROOK, BISHOP, KNIGHT};
         return v;
