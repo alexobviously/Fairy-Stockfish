@@ -251,21 +251,15 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   var = v;
   st = si;
 
-  //std::cout << "1\n";
-
   ss >> std::noskipws;
 
   Square sq = SQ_A1 + max_rank() * NORTH;
   int commitFile = 0;
   int rank = 0;
 
-  //std::cout << "2\n";
-  //std::cout << fenStr << "\n";
-
   // 1. Piece placement
   while ((ss >> token) && !isspace(token))
   {
-      //std::cout << "M: " << token << " " << sq << "\n";
       if (isdigit(token) && (!commit_gates() || (rank != 0 && rank != max_rank() + 2)))
       {
 #ifdef LARGEBOARDS
@@ -280,11 +274,9 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
 
       else if (token == '/')
       {
-          //std::cout << "3\n";
           if(!commit_gates() || (rank != 0 && rank <= max_rank())) sq += 2 * SOUTH + (FILE_MAX - max_file()) * EAST;
           ++rank;
           commitFile = 0;
-          //std::cout << is_ok(sq) << "\n";
           if (!is_ok(sq))
               break;
       }
@@ -324,7 +316,6 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
       else if (token == '[')
           break;
   }
-  //std::cout << '4';
   // Pieces in hand
   if (!isspace(token))
       while ((ss >> token) && !isspace(token))
@@ -342,8 +333,6 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   if (sfen)
       sideToMove = ~sideToMove;
   ss >> token;
-
-  //std::cout << '5';
 
   // 3-4. Skip parsing castling and en passant flags if not present
   st->epSquare = SQ_NONE;
@@ -427,8 +416,6 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
   // Check counter for nCheck
   ss >> std::skipws >> token >> std::noskipws;
 
- // std::cout << '6';
-
   if (check_counting())
   {
       if (ss.peek() == '+')
@@ -490,15 +477,11 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
       st->rule50 = 0;
   }
 
-  //std::cout << '7';
-
   chess960 = isChess960 || v->chess960;
   thisThread = th;
   set_state(st);
 
   assert(pos_is_ok());
-
-  //std::cout << '8';
 
   return *this;
 }
@@ -629,7 +612,7 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
   int emptyCnt;
   std::ostringstream ss;
 
-  std::cout << "building fen...\n";
+  //std::cout << "building fen...\n";
 
   if(commit_gates()){
       for(File f = FILE_A; f < max_file(); ++f){
@@ -1242,7 +1225,6 @@ bool Position::gives_check(Move m) const {
 /// moves should be filtered out before this function is called.
 
 void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
-std::cout << "in do_move\n";
   assert(is_ok(m));
   assert(&newSt != st);
 
@@ -1542,9 +1524,9 @@ std::cout << "in do_move\n";
           st->gatesBB[us] = 0;
   }
 
-  std::cout << "musketeer do_move check:: commit_gates(): " << commit_gates() << " us: " << us 
-  << " file_of(from): " << file_of(from) << " has_committed_piece(): \n" << has_committed_piece(us, file_of(from)) << "\n";
-  std::cout << committedGates << "\n";
+//   std::cout << "musketeer do_move check:: commit_gates(): " << commit_gates() << " us: " << us 
+//   << " file_of(from): " << file_of(from) << " has_committed_piece(): \n" << has_committed_piece(us, file_of(from)) << "\n";
+//   std::cout << committedGates << "\n";
 
   // Musketeer gating
   if(commit_gates()){
@@ -1555,7 +1537,6 @@ std::cout << "in do_move\n";
           st->removedGatingType = drop_committed_piece(BLACK, file_of(from));
       }
       else st->removedGatingType = NO_PIECE_TYPE;
-      std::cout << "removedGatingType: " << st->removedGatingType << "\n";
   }
 
   // Update the key with the final value
